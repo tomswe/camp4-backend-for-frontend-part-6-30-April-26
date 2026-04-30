@@ -1,0 +1,37 @@
+import express from "express";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
+import logger from "./middleware/logger.js";
+import dotenv from "dotenv";
+import todoRoutes from "./modules/todo/todoRoute.js";
+import { xss } from "express-xss-sanitizer";
+import authRoutes from "./modules/auth/authRoute.js";
+import cookieParser from "cookie-parser";
+
+dotenv.config();
+const app = express();
+const isTest = process.env.NODE_ENV === "development";
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || true,
+    credentials: true,
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+  }),
+);
+app.use(helmet());
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isTest ? 10000 : 100,
+  }),
+);
+app.use(cookieParser());
+app.use(express.json());
+app.use(xss());
+app.use(logger);
+app.use("/api/auth", authRoutes);
+app.use("/api/todos", todoRoutes);
+
+export default app;
