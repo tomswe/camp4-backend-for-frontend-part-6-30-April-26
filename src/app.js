@@ -23,7 +23,8 @@ const isTest = process.env.NODE_ENV === "development";
 
 // multiple origins
 const allowedOrigins =
-  process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
+  // process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
+  ["http://localhost:5173", "https://camp4-fe-handson.vercel.app/"];
 
 app.use(
   cors({
@@ -35,8 +36,11 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+app.options("{*path}", cors()); // preflight
 
 app.use(
   helmet({
