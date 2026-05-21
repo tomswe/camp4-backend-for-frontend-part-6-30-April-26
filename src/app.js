@@ -24,7 +24,10 @@ const isTest = process.env.NODE_ENV === "development";
 // multiple origins
 const allowedOrigins =
   // process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
-  ["http://localhost:5173", "https://camp4-fe-handson.vercel.app"];
+  [
+    "http://localhost:5173",
+    "https://camp4-frontend-part-7-react-redux-a.vercel.app",
+  ];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
