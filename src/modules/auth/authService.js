@@ -109,5 +109,6 @@ export const getUser = async (id) => {
     id: user.id,
     email: user.email,
     role: user.role,
+    name: user.name,
   };
 };

@@ -13,14 +13,37 @@ dotenv.config();
 const app = express();
 const isTest = process.env.NODE_ENV === "development";
 
+// app.use(
+//   cors({
+//     origin: process.env.CORS_ORIGIN || true,
+//     credentials: true,
+//     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+//   }),
+// );
+
+// multiple origins
+const allowedOrigins =
+  process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || true,
+    origin: (origin, callback) => {
+      // allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS blocked: ${origin}`));
+    },
     credentials: true,
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   }),
 );
-app.use(helmet());
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
