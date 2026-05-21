@@ -24,23 +24,7 @@ const isTest = process.env.NODE_ENV === "development";
 // multiple origins
 const allowedOrigins =
   // process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
-  ["http://localhost:5173", "https://camp4-fe-handson.vercel.app/"];
-
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       // allow requests with no origin (mobile apps, curl, Postman)
-//       if (!origin) return callback(null, true);
-//       if (allowedOrigins.includes(origin)) return callback(null, true);
-//       callback(new Error(`CORS blocked: ${origin}`));
-//     },
-//     credentials: true,
-//     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   }),
-// );
-
-// app.options("{*path}", cors()); // preflight
+  ["http://localhost:5173", "https://camp4-fe-handson.vercel.app"];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -72,6 +56,22 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+
+// app.use(
+//   cors({
+//     origin: (origin, callback) => {
+//       // allow requests with no origin (mobile apps, curl, Postman)
+//       if (!origin) return callback(null, true);
+//       if (allowedOrigins.includes(origin)) return callback(null, true);
+//       callback(new Error(`CORS blocked: ${origin}`));
+//     },
+//     credentials: true,
+//     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   }),
+// );
+
+// app.options("{*path}", cors()); // preflight
 
 // app.use(
 //   helmet({
