@@ -12,75 +12,39 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 const app = express();
 const isTest = process.env.NODE_ENV === "development";
-
-// app.use(
-//   cors({
-//     origin: process.env.CORS_ORIGIN || true,
-//     credentials: true,
-//     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-//   }),
-// );
-
-// multiple origins
 const allowedOrigins =
-  // process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
-  [
-    "http://localhost:5173",
-    "https://camp4-frontend-part-7-react-redux-a.vercel.app",
-  ];
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-  );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(204);
-  }
-  next();
-});
+  process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()) || [];
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      // allow requests tanpa origin contoh: Postman, mobile apps, curl
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      callback(new Error(`CORS blocked: ${origin}`));
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked: ${origin}`));
     },
+
     credentials: true,
+
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// app.use(
-//   cors({
-//     origin: (origin, callback) => {
-//       // allow requests with no origin (mobile apps, curl, Postman)
-//       if (!origin) return callback(null, true);
-//       if (allowedOrigins.includes(origin)) return callback(null, true);
-//       callback(new Error(`CORS blocked: ${origin}`));
-//     },
-//     credentials: true,
-//     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//   }),
-// );
+app.options(/.*/, cors());
 
-// app.options("{*path}", cors()); // preflight
-
-// app.use(
-//   helmet({
-//     crossOriginResourcePolicy: { policy: "cross-origin" },
-//   }),
-// );
+app.use(
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: "cross-origin",
+    },
+  }),
+);
 
 app.use(
   rateLimit({
