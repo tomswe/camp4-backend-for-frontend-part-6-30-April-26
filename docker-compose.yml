@@ -1,0 +1,89 @@
+# Menentukan versi spesifikasi docker-compose yang digunakan
+version: "3.8"
+
+# Di dalam blok 'services', kita mendefinisikan container apa saja yang ingin kita jalankan.
+services:
+  # ---------------------------------------------------------------------------
+  # SERVICE 1: BACKEND API (EXPRESS)
+  # ---------------------------------------------------------------------------
+  api:
+    # Memerintahkan Docker untuk membuat image sendiri menggunakan 'Dockerfile' di folder saat ini (.)
+    build: .
+
+    # Kebijakan restart: Jika container mati/crash, Docker akan otomatis menyalakannya kembali.
+    restart: unless-stopped
+
+    # Membaca file konfigurasi variabel lingkungan (.env) yang ada di folder project.
+    env_file:
+      - .env
+
+    environment:
+      # PENTING: Menimpa DATABASE_URL dari file .env lokal Anda.
+      # Di dalam jaringan Docker, 'localhost' diganti dengan nama service database kita, yaitu 'db'.
+      - DATABASE_URL=postgres://username:password@db:5432/database_name
+      - NODE_ENV=production
+
+    # Menandakan bahwa service 'api' ini sangat bergantung pada database 'db'.
+    depends_on:
+      db:
+        # Express baru akan dinyalakan SETELAH PostgreSQL benar-benar siap menerima koneksi.
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # SERVICE 2: DATABASE (POSTGRESQL)
+  # ---------------------------------------------------------------------------
+  db:
+    # Menggunakan image resmi PostgreSQL versi 15 dengan OS Alpine agar ringan.
+    image: postgres:15-alpine
+    restart: unless-stopped
+
+    # Konfigurasi wajib awal untuk membuat database baru (username, password, dan nama db).
+    environment:
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database_name
+
+    volumes:
+      # 1. Menyimpan data database secara permanen di host agar tidak hilang saat container mati.
+      - pgdata:/var/lib/postgresql/data
+
+      # 2. [UPDATE BARU]: Membaca file db.sql dari komputer Anda.
+      # File ini otomatis dijalankan oleh Postgres HANYA SAAT database baru pertama kali dibuat.
+      - ./db.sql:/docker-entrypoint-initdb.d/init.sql
+
+    # Fitur pengecekan kesehatan (healthcheck) container.
+    healthcheck:
+      # Docker rutin mengetes apakah PostgreSQL sudah benar-benar hidup dan siap.
+      test: ["CMD-SHELL", "pg_isready -U username -d database_name"]
+      interval: 5s # Cek setiap 5 detik sekali
+      timeout: 5s # Batas waktu tunggu respon adalah 5 detik
+      retries: 5 # Jika gagal 5 kali berturut-turut, container dianggap rusak
+
+  # ---------------------------------------------------------------------------
+  # SERVICE 3: REVERSE PROXY (NGINX)
+  # ---------------------------------------------------------------------------
+  nginx:
+    # Menggunakan image resmi Nginx versi Alpine.
+    image: nginx:alpine
+    restart: unless-stopped
+
+    # Membuka gerbang komunikasi ke internet.
+    ports:
+      # Menghubungkan Port 80 di server fisik/komputer ke Port 80 milik Nginx di dalam container.
+      - "80:80"
+
+    volumes:
+      # Menghubungkan file konfigurasi Nginx buatan kita ke dalam Nginx di dalam container.
+      # ':ro' (Read-Only) artinya Nginx hanya bisa membaca file tersebut demi keamanan.
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    # Nginx baru menyala setelah service 'api' siap.
+    depends_on:
+      - api
+
+# -----------------------------------------------------------------------------
+# DEFINISI VOLUMES GLOBAL
+# -----------------------------------------------------------------------------
+# Mendaftarkan nama volume 'pgdata' yang digunakan oleh database di atas.
+volumes:
+  pgdata:

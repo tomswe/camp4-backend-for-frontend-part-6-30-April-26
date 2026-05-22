@@ -1,0 +1,53 @@
+# -----------------------------------------------------------------------------
+# STEP 1: MENENTUKAN BASE IMAGE
+# -----------------------------------------------------------------------------
+# Kita menggunakan Node.js versi 20 dengan varian 'alpine'.
+# Alpine adalah OS Linux yang sangat kecil dan ringan (hanya beberapa MB).
+# Ini membuat ukuran hasil akhir container kita menjadi jauh lebih kecil dan aman.
+FROM node:20-alpine
+
+# -----------------------------------------------------------------------------
+# STEP 2: MENENTUKAN DIREKTORI KERJA
+# -----------------------------------------------------------------------------
+# Semua perintah selanjutnya akan dijalankan di dalam folder '/app' di dalam container.
+# Jika folder ini belum ada, Docker akan otomatis membuatnya.
+WORKDIR /app
+
+# -----------------------------------------------------------------------------
+# STEP 3: MENGINSTAL DEPENDENSI (PACKAGE)
+# -----------------------------------------------------------------------------
+# Kita menyalin file package.json dan package-lock.json terlebih dahulu.
+# Kenapa tidak menyalin semua file langsung? Agar Docker bisa membuat 'cache'.
+# Jika kode JavaScript Anda berubah tetapi package.json tidak berubah, 
+# Docker tidak perlu mengulang proses download library, sehingga build jauh lebih cepat.
+COPY package*.json ./
+
+# Menjalankan perintah instalasi library.
+# 'npm ci' mirip dengan 'npm install', tapi lebih cepat dan ketat untuk lingkungan production.
+# '--omit=dev' memastikan kita HANYA menginstal dependencies untuk production.
+# Library seperti 'nodemon', 'vitest', atau 'supertest' tidak akan ikut terinstal karena tidak dibutuhkan saat aplikasi jalan di server.
+RUN npm ci --omit=dev
+
+# -----------------------------------------------------------------------------
+# STEP 4: MENYALIN KODE SUMBER (SOURCE CODE)
+# -----------------------------------------------------------------------------
+# Setelah library terinstal, sekarang kita salin seluruh file dari komputer kita (.)
+# ke dalam direktori kerja di dalam container (.).
+# File yang tidak penting (seperti folder node_modules lokal atau .env lokal) 
+# akan otomatis diabaikan jika Anda memiliki file .dockerignore.
+COPY . .
+
+# -----------------------------------------------------------------------------
+# STEP 5: MEMBUKA PORT APLIKASI
+# -----------------------------------------------------------------------------
+# Ini berfungsi sebagai dokumentasi bahwa container ini mendengarkan (listen) di port 3000.
+# Catatan: Ini belum membuka port ke internet, baru sebatas memberi tahu Docker.
+EXPOSE 3000
+
+# -----------------------------------------------------------------------------
+# STEP 6: PERINTAH UTAMA UNTUK JALANIN APLIKASI
+# -----------------------------------------------------------------------------
+# CMD adalah perintah yang otomatis dijalankan saat container dinyalakan.
+# Kita memanggil 'npm start' yang di dalam package.json Anda menjalankan 'node ./src/server.js'.
+# Di production kita tidak menggunakan 'nodemon' karena nodemon memakan memori untuk memantau perubahan file yang sebenarnya tidak akan berubah di server.
+CMD ["npm", "start"]
